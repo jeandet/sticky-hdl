@@ -1,0 +1,2 @@
+set_io    led_output  39
+set_io    reset    23

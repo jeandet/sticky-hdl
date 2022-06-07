@@ -1,0 +1,3 @@
+set_io    Txd  27
+set_io    sck  26
+set_io    rst  23

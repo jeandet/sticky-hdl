@@ -1,0 +1,16 @@
+**/.idea/*
+**/__pycache__/*
+*.srctrl*
+*.kdev4
+.vscode
+*.pyc
+*.swp
+*.o
+*.json
+*.vcd
+*.wave
+*.ghw
+*.svg
+*.xml
+*.asc
+*.bin

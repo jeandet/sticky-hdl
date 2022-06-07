@@ -1,0 +1,14 @@
+set_io    Txd  27  
+set_io    rst  23
+set_io    cs   3
+set_io    conv 4
+set_io    ready_strobe 45
+set_io    miso_a[0] 6
+set_io    miso_a[1] 47
+set_io    miso_a[2] 18 
+set_io    miso_a[3] 11
+set_io    miso_b[0] 9
+set_io    miso_b[1] 2
+set_io    miso_b[2] 10
+set_io    miso_b[3] 21
+set_io    sclk 13
