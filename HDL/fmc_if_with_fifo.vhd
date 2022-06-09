@@ -25,17 +25,19 @@ ARCHITECTURE ar_fmc_if_with_fifo OF fmc_if_with_fifo IS
 
     SIGNAL fifo_l1_data_out : STD_LOGIC_VECTOR(15 DOWNTO 0);
     SIGNAL fifo_l1_empty : STD_LOGIC;
+    SIGNAL fifo_l1_empty_r : STD_LOGIC;
     SIGNAL fifo_l1_half_full : STD_LOGIC;
     SIGNAL fifo_l1_rd : STD_LOGIC;
 
     SIGNAL fifo_l0_data_out : STD_LOGIC_VECTOR(15 DOWNTO 0);
     SIGNAL fifo_l0_empty : STD_LOGIC := '1';
     SIGNAL fifo_l0_full : STD_LOGIC := '0';
+    SIGNAL fifo_l0_full_r : STD_LOGIC := '0';
     SIGNAL fifo_l0_half_full : STD_LOGIC := '0';
     SIGNAL fifo_l0_wr : STD_LOGIC;
     SIGNAL fifo_l0_rd : STD_LOGIC;
 
-    TYPE state_t IS (idle, load1, load2);
+    TYPE state_t IS (idle, load1, load2, load3);
     SIGNAL state : state_t := idle;
     SIGNAL L0_WRITE_CNT : INTEGER RANGE 0 TO BURST_SIZE - 1 := 0;
 BEGIN
@@ -61,9 +63,9 @@ BEGIN
 
     fifo_l0 : ENTITY work.fifo_0ws
         GENERIC MAP(
-            DEPTH => BURST_SIZE,
+            DEPTH => BURST_SIZE*2,
             WDTH => 16,
-            TRESHOLD => 8
+            TRESHOLD => BURST_SIZE
         )
         PORT MAP(
             reset => reset,
@@ -98,19 +100,25 @@ BEGIN
             fifo_l0_wr <= '0';
             fifo_l1_rd <= '0';
             state <= idle;
+            fifo_l1_empty_r <= '1';
+            fifo_l0_full_r <= '1';
         ELSIF clk'event AND clk = '1' THEN
+            fifo_l1_empty_r <= fifo_l1_empty;
+            fifo_l0_full_r <= fifo_l0_full;
             CASE state IS
                 WHEN idle =>
-                    IF fifo_l1_empty = '0' AND fifo_l0_full = '0' THEN
-                        fifo_l1_rd <= '1';
-                        fifo_l0_wr <= '1';
+                    IF fifo_l1_empty_r = '0' AND fifo_l1_empty = '0' AND fifo_l0_full_r = '0' AND fifo_l0_full = '0' THEN
                         state <= load1;
+                        fifo_l1_rd <= '1';
                     END IF;
                 WHEN load1 =>
-                    state <= load2;
                     fifo_l1_rd <= '0';
-                    fifo_l0_wr <= '0';
+                    fifo_l0_wr <= '1';
+                    state <= load2;
                 WHEN load2 =>
+                    state <= load3;
+                    fifo_l0_wr <= '0';
+                WHEN load3 =>
                     state <= idle;
             END CASE;
         END IF;

@@ -28,6 +28,8 @@ ARCHITECTURE ar_ads92x4 OF ads92x4 IS
     SIGNAL bit_counter : INTEGER := 0;
     SIGNAL smp_clk_reg : STD_LOGIC := '0';
     SIGNAL gated_sclk : STD_LOGIC := '0';
+    SIGNAL ready_strobe_r1 : STD_LOGIC := '0';
+    SIGNAL ready_strobe_r0 : STD_LOGIC := '0';
     SIGNAL cs_reg : STD_LOGIC := '1';
     SIGNAL cs_reg_d : STD_LOGIC := '1';
     SIGNAL conv_sig : STD_LOGIC;
@@ -92,6 +94,9 @@ BEGIN
     PROCESS (clk_2x)
     BEGIN
         IF clk_2x'event AND clk_2x = '1' THEN
+
+            ready_strobe_r0 <= ready_strobe;
+            ready_strobe_r1 <= ready_strobe_r0;
             cs_reg_d <= cs_reg;
             IF cs_reg_d = '0' AND cs_reg = '0' THEN
                 gated_sclk <= NOT gated_sclk;

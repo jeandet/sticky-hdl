@@ -72,7 +72,7 @@ BEGIN
       fifo_full => fifo_full,
       fifo_wr => fifo_wr,
       fifo_data_in => fifo_data,
-      fmc_rd => rd_reg1,
+      fmc_rd => rd,
       fmc_data => data,
       fmc_has_data => has_data
     );

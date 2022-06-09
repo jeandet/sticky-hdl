@@ -37,7 +37,7 @@ architecture interieur of rcc is
 	  );
 
 
-    clk1M_gen: entity work.clk_gen generic map(CLK_IN_PERIOD =>  41667 ps, CLK_OUT_PERIOD => 10000 ns) port map (clk_in => clk_24M_reg, clk_out => clk_1M);
+    clk1M_gen: entity work.clk_gen generic map(CLK_IN_PERIOD =>  41667 ps, CLK_OUT_PERIOD => 10 us) port map (clk_in => clk_24M_reg, clk_out => clk_1M);
     clk10k_gen: entity work.clk_gen generic map(CLK_IN_PERIOD => 41667 ps, CLK_OUT_PERIOD => 100 us) port map (clk_in => clk_24M_reg, clk_out => clk_10k);
     
     process (clk_48)
