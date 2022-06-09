@@ -1,10 +1,12 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
+use IEEE.math_real.all;
+
 
 ENTITY fifo IS
     GENERIC (
-        DEPTH : INTEGER := 256;
+        DEPTH : INTEGER := 4096;
         WDTH : INTEGER := 16;
         TRESHOLD : INTEGER := 32
     );
@@ -23,10 +25,11 @@ ENTITY fifo IS
 END ENTITY;
 
 ARCHITECTURE ar_fifo OF fifo IS
-    SIGNAL write_ptr : INTEGER RANGE 0 TO 255 := 0;
-    SIGNAL read_ptr : INTEGER RANGE 0 TO 255 := 0;
-    SIGNAL write_addr : STD_LOGIC_VECTOR(7 DOWNTO 0);
-    SIGNAL read_addr : STD_LOGIC_VECTOR(7 DOWNTO 0);
+    CONSTANT ABITS : INTEGER :=integer(ceil(log2(real(DEPTH))));
+    SIGNAL write_ptr : INTEGER RANGE 0 TO DEPTH-1 := 0;
+    SIGNAL read_ptr : INTEGER RANGE 0 TO DEPTH-1 := 0;
+    SIGNAL write_addr : STD_LOGIC_VECTOR(ABITS-1 DOWNTO 0);
+    SIGNAL read_addr : STD_LOGIC_VECTOR(ABITS-1 DOWNTO 0);
     SIGNAL WDATA : STD_LOGIC_VECTOR(WDTH - 1 DOWNTO 0);
     SIGNAL RDATA : STD_LOGIC_VECTOR(WDTH - 1 DOWNTO 0);
     SIGNAL ram_re : STD_LOGIC := '0';
@@ -36,7 +39,8 @@ ARCHITECTURE ar_fifo OF fifo IS
     SIGNAL empty_sig : STD_LOGIC := '1';
 BEGIN
 
-    RAM0 : ENTITY work.bram_256x16(hw_ram)
+    RAM0 : ENTITY work.bram
+        GENERIC MAP (ABITS => ABITS)
         PORT MAP(
             RDATA => RDATA,
             RADDR => read_addr,
@@ -57,7 +61,7 @@ BEGIN
         '0';
     empty_sig <= '1' WHEN data_count = 0 ELSE
         '0';
-    full_sig <= '1' WHEN data_count = 256 ELSE
+    full_sig <= '1' WHEN data_count = DEPTH ELSE
         '0';
     
     data_out <= RDATA;
@@ -83,7 +87,7 @@ BEGIN
             write_addr <= (OTHERS => '0');
         ELSIF clk'event AND clk = '1' THEN
             IF wr = '1' AND full_sig = '0' THEN
-                write_ptr <= (write_ptr + 1) MOD (DEPTH - 1);
+                write_ptr <= (write_ptr + 1) MOD (DEPTH);
                 write_addr <= STD_LOGIC_VECTOR(to_unsigned(write_ptr, write_addr'length));
                 ram_we <= '1';
                 WDATA <= data_in;
@@ -99,7 +103,7 @@ BEGIN
             read_ptr <= 0;
         ELSIF clk'event AND clk = '1' THEN
             IF rd = '1' THEN
-                read_ptr <= (read_ptr + 1) MOD (DEPTH - 1);
+                read_ptr <= (read_ptr + 1) MOD (DEPTH);
             END IF;
         END IF;
     END PROCESS;

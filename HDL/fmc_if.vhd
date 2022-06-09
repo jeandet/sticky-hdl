@@ -2,15 +2,12 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
-ENTITY nor_interface IS
+ENTITY fmc_if IS
     PORT (
         reset : IN STD_LOGIC;
         clk : IN STD_LOGIC;
 
         rd : IN STD_LOGIC;
-        cs : IN STD_LOGIC;
-        wr : IN STD_LOGIC;
-        rs : IN STD_LOGIC;
         data : INOUT STD_LOGIC_VECTOR(15 DOWNTO 0);
         has_data : OUT STD_LOGIC;
 
@@ -21,11 +18,10 @@ ENTITY nor_interface IS
     );
 END ENTITY;
 
-ARCHITECTURE ar_nor_interface OF nor_interface IS
+ARCHITECTURE ar_fmc_if OF fmc_if IS
     SIGNAL data_reg_in : STD_LOGIC_VECTOR(15 DOWNTO 0);
     SIGNAL data_reg_out : STD_LOGIC_VECTOR(15 DOWNTO 0);
     SIGNAL data_out_enable : STD_LOGIC := '0';
-    SIGNAL fifo_rd_reg : STD_LOGIC := '0';
     TYPE state_t IS (idle, data_latch);
     SIGNAL state : state_t := idle;
 BEGIN
@@ -47,19 +43,18 @@ BEGIN
     BEGIN
         IF reset = '0' THEN
             state <= idle;
-            fifo_rd_reg <= '0';
+            fifo_rd <= '0';
         ELSIF clk'event AND clk = '1' THEN
             CASE state IS
                 WHEN idle =>
-                    fifo_rd_reg <= '0';
-                    IF rd = '0' THEN
+                    fifo_rd <= '0';
+                    data_reg_out <= fifo_data;
+                    IF rd = '0' and fifo_empty ='0' THEN
                         state <= data_latch;
-                        fifo_rd_reg <= '1';
-                    ELSE
-                        data_reg_out <= fifo_data;
+                        fifo_rd <= '1';
                     END IF;
                 WHEN data_latch =>
-                    fifo_rd_reg <= '0';
+                    fifo_rd <= '0';
                     IF rd = '1' THEN
                         state <= idle;
                     END IF;
@@ -69,5 +64,4 @@ BEGIN
 
     data_out_enable <= (NOT rd) AND reset;
 
-    fifo_rd <= '1' WHEN rd = '0' AND fifo_rd_reg = '0' AND state = idle ELSE '0';
-END ARCHITECTURE ar_nor_interface;
+END ARCHITECTURE ar_fmc_if;

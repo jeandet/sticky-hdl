@@ -14,9 +14,9 @@ set_io    data[7] 45
 set_io    data[8] 44
 set_io    data[9] 43
 set_io    data[10] 42
-set_io  -pullup yes  -pullup_resistor 3P3K data[11] 41 
-set_io  -pullup yes  -pullup_resistor 3P3K data[12] 40
-set_io  -pullup yes  -pullup_resistor 3P3K data[13] 39
+set_io    data[11] 41
+set_io    data[12] 40
+set_io    data[13] 39
 set_io    data[14] 38
 set_io    data[15] 37
 set_io    has_data 12

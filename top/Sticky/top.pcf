@@ -20,4 +20,15 @@ set_io  -pullup yes  -pullup_resistor 3P3K data[13] 39
 set_io    data[14] 38
 set_io    data[15] 37
 set_io    has_data 12
-set_io    conv 21
+
+set_io    conv          21
+set_io    adc_cs        20
+set_io    ready_strobe  2
+set_io    sclk          18
+set_io    mosi          19
+
+set_io    miso_a[1]     4
+set_io    miso_a[0]     3
+
+set_io    miso_b[1]     11
+set_io    miso_b[0]     10

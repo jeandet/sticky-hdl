@@ -4,7 +4,8 @@ SIM ?= ghdl
 PWD=$(shell pwd)
 
 VHDL_SOURCES = $(PWD)/../../top/test_FMC/top.vhdl $(PWD)/../../HDL/fifo.vhd $(PWD)/../../HDL/bram_256x16.vhd\
-               $(PWD)/../../Sim_Models/SB_RAM40_4K.vhd $(PWD)/../../HDL/rcc.vhdl $(PWD)/../../HDL/nor_interface.vhd\
+               $(PWD)/../../Sim_Models/SB_RAM40_4K.vhd $(PWD)/../../HDL/rcc.vhdl $(PWD)/../../HDL/fmc_if.vhd\
+			   $(PWD)/../../HDL/bram.vhd $(PWD)/../../HDL/fifo_0ws.vhd $(PWD)/../../HDL/fmc_if_with_fifo.vhd\
 			   $(PWD)/../../HDL/clk_gen.vhdl $(PWD)/../../Sim_Models/SB_HFOSC.vhd $(PWD)/../../HDL/io_pin.vhd
 
 ifeq ($(SIM),ghdl)

@@ -32,30 +32,34 @@ async def read_fifo(fifo):
     return fifo.data_out.value
 
 
-async def continuous_write(fifo):
+async def continuous_write(fifo, data):
     while fifo.empty != 1:
-        fifo.rd <= 1
+        fifo.rd.value = 1
         await RisingEdge(fifo.clk)
-    fifo.rd <= 0
-    data = 0
-    fifo.wr <= 1
-    while fifo.full != 1:
-        fifo.data_in <= data
-        data += 1
+    fifo.rd.value = 0
+    fifo.wr.value = 1
+    for v in data:
+        assert fifo.full != 1
+        fifo.data_in.value = v
         await RisingEdge(fifo.clk)
         await FallingEdge(fifo.clk)
-    fifo.wr <= 0 
+    fifo.wr.value = 0 
 
 async def continuous_read(fifo):
     while fifo.full != 1:
-        fifo.wr <= 1
+        fifo.wr.value = 1
         await RisingEdge(fifo.clk)
-    fifo.wr <= 0
-    fifo.rd <= 1
-    while fifo.empty != 1:
+    data = []
+    fifo.wr.value = 0
+    data.append(fifo.data_out.value)
+    fifo.rd.value = 1
+    while fifo.empty.value != 1:
         await RisingEdge(fifo.clk)
         await FallingEdge(fifo.clk)
-    fifo.rd <= 0 
+        if fifo.empty.value != 1:
+            data.append(fifo.data_out.value)
+    fifo.rd.value = 0 
+    return data
 
 
 
@@ -77,15 +81,16 @@ async def write_test(fifo):
 async def test_fifo(dut):
     clk   = Clock(dut.clk, 10, units='ns')
     clk_gen = cocotb.fork(clk.start())
-    dut.reset <= 0
-    dut.rd <= 0
-    dut.wr <= 0
+    dut.reset.value = 0
+    dut.rd.value = 0
+    dut.wr.value = 0
     await Timer(100, units='ns')
-    dut.reset <= 1
+    dut.reset.value = 1
     await RisingEdge(dut.clk)
-    await write_test(dut)
-    await continuous_write(dut)
-    await continuous_read(dut)
+    await write_test(dut) 
+    data = list(range(256))
+    await continuous_write(dut, data)
+    data = await continuous_read(dut)
     
 
 

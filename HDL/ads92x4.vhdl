@@ -1,92 +1,104 @@
-library ieee ;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE ieee.numeric_std.ALL;
 
-entity ads92x4 is
-generic(
-    CLK_PERIOD : time := 20.8 ns  -- F = 48MHz
-);
-port(
-    reset   : in std_logic;
-    clk     : in std_logic;
-    smp_clk : in std_logic;
-    data_a  : out std_logic_vector(15 downto 0);
-    data_b  : out std_logic_vector(15 downto 0);
+ENTITY ads92x4 IS
+    GENERIC (
+        CLK_PERIOD : TIME := 20.8 ns -- F = 48MHz
+    );
+    PORT (
+        reset : IN STD_LOGIC;
+        clk_2x : IN STD_LOGIC;
+        clk : IN STD_LOGIC;
+        smp_clk : IN STD_LOGIC;
+        data_a : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+        data_b : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-    conv    : out std_logic;
-    cs      : out std_logic;
-    ready_strobe : in std_logic;
-    sclk    : out std_logic;
-    mosi    : out std_logic;
-    miso_a  : in std_logic_vector(3 downto 0);
-    miso_b  : in std_logic_vector(3 downto 0)
-);
-end entity;
+        conv : OUT STD_LOGIC;
+        cs : OUT STD_LOGIC;
+        ready_strobe : IN STD_LOGIC;
+        sclk : OUT STD_LOGIC;
+        mosi : OUT STD_LOGIC;
+        miso_a : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+        miso_b : IN STD_LOGIC_VECTOR(3 DOWNTO 0)
+    );
+END ENTITY;
 
-architecture ar_ads92x4 of ads92x4 is
-    signal bit_counter : integer :=0; 
-    signal smp_clk_reg : std_logic := '0';
-    signal gated_sclk  : std_logic := '0';
-    signal cs_reg      : std_logic := '1';
-    signal cs_reg_d      : std_logic := '1';
-    type state_t is (idle, serialize);
-    signal state : state_t := idle;
-    
-    signal data_a_sr  :  std_logic_vector(15 downto 0):=(others => '0');
-    signal data_b_sr  :  std_logic_vector(15 downto 0):=(others => '0');
-begin
+ARCHITECTURE ar_ads92x4 OF ads92x4 IS
+    SIGNAL bit_counter : INTEGER := 0;
+    SIGNAL smp_clk_reg : STD_LOGIC := '0';
+    SIGNAL gated_sclk : STD_LOGIC := '0';
+    SIGNAL cs_reg : STD_LOGIC := '1';
+    SIGNAL cs_reg_d : STD_LOGIC := '1';
+    SIGNAL conv_sig : STD_LOGIC;
+    SIGNAL conv_reg : STD_LOGIC;
+    SIGNAL conv_reg_d : STD_LOGIC;
+    TYPE state_t IS (idle, serialize, last_bit);
+    SIGNAL state : state_t := idle;
 
-    --sclk_gen: entity work.clk_gen generic map(CLK_IN_PERIOD => CLK_PERIOD, CLK_OUT_PERIOD => 17 ns) port map (clk_in => clk, clk_out => gated_sclk);
-    conv_gen: entity work.pulse_gen generic map(CLK_PERIOD => CLK_PERIOD, PULSE_MIN_LENGTH => 15 ns) port map (clk => clk, start => smp_clk, pulse => conv);
+    SIGNAL data_a_sr : STD_LOGIC_VECTOR(17 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL data_b_sr : STD_LOGIC_VECTOR(17 DOWNTO 0) := (OTHERS => '0');
+BEGIN
+
+    conv_gen : ENTITY work.pulse_gen GENERIC MAP(CLK_PERIOD => CLK_PERIOD, PULSE_MIN_LENGTH => 15 ns) PORT MAP (clk => clk, start => smp_clk, pulse => conv_sig);
+    conv <= conv_sig;
 
     cs <= cs_reg;
-    mosi        <= '0';
+    mosi <= '0';
 
-    process(clk, reset)
-    begin
-        if reset = '0' then 
+    PROCESS (clk, reset)
+    BEGIN
+        IF reset = '0' THEN
             smp_clk_reg <= '0';
-            cs_reg      <= '1';
-            state       <= idle;
-        elsif clk'event and clk = '1' then
-            cs_reg_d <= cs_reg;
-            case state is
-                when idle =>
-                    if ready_strobe = '1' then
-                        state <= serialize;
-                    end if;
+            cs_reg <= '1';
+            state <= idle;
+            conv_reg <= '1';
+            bit_counter <= 0;
+        ELSIF clk'event AND clk = '1' THEN
+            conv_reg <= conv_sig;
+            conv_reg_d <= conv_reg;
+            CASE state IS
+                WHEN idle =>
                     cs_reg <= '1';
-                    data_a <= data_a_sr;
-                    data_b <= data_b_sr;
-                when serialize =>
-                    if bit_counter = 16 then 
-                        state <= idle;
+                    IF conv_reg = '1' AND conv_reg_d = '0' THEN
+                        state <= serialize;
+                        data_a_sr <= (OTHERS => '0');
+                        data_b_sr <= (OTHERS => '0');
+                    ELSE
+                        data_a <= data_a_sr(16 downto 1);
+                        data_b <= data_b_sr(16 downto 1);
+                    END IF;
+                    bit_counter <= 0;
+                WHEN serialize =>
+                    IF bit_counter = 16 THEN
+                        state <= last_bit;
                         cs_reg <= '1';
-                    else
+                    ELSE
                         cs_reg <= '0';
-                    end if;
-            end case;
-        end if;
-    end process;
+                        bit_counter <= bit_counter + 1;
+                    END IF;
+                    data_a_sr <= data_a_sr(16 DOWNTO 0) & miso_a(0);
+                    data_b_sr <= data_b_sr(16 DOWNTO 0) & miso_b(0);
+                WHEN last_bit => 
+                    state <= idle;
+                    data_a_sr <= data_a_sr(16 DOWNTO 0) & miso_a(0);
+                    data_b_sr <= data_b_sr(16 DOWNTO 0) & miso_b(0);
+            END CASE;
+        END IF;
+    END PROCESS;
 
-    process(gated_sclk)
-    begin
-        if gated_sclk'event and gated_sclk ='1' then
-            if state = serialize and cs_reg = '0' then
-                if bit_counter < 16 then
-                    bit_counter <= bit_counter + 1;
-                end if;
-            else
-                bit_counter <= 0;
-            end if;
-            if cs_reg = '0' then --or bit_counter = 16 then
-                data_a_sr <= data_a_sr(14 downto 0) & miso_a(0);
-                data_b_sr <= data_b_sr(14 downto 0) & miso_b(0);
-            end if;
+    sclk <= gated_sclk;
 
-        end if; 
-    end process;
-    gated_sclk <= clk;
-    sclk <= gated_sclk when cs_reg_d = '0' and state = serialize else '0';
+    PROCESS (clk_2x)
+    BEGIN
+        IF clk_2x'event AND clk_2x = '1' THEN
+            cs_reg_d <= cs_reg;
+            IF cs_reg_d = '0' AND cs_reg = '0' THEN
+                gated_sclk <= NOT gated_sclk;
+            ELSE
+                gated_sclk <= '0';
+            END IF;
+        END IF;
+    END PROCESS;
 
-end architecture ar_ads92x4;
+END ARCHITECTURE ar_ads92x4;

@@ -3,7 +3,7 @@ SIM ?= ghdl
 
 PWD=$(shell pwd)
 
-VHDL_SOURCES = $(PWD)/../../HDL/fifo.vhd $(PWD)/../../HDL/bram_256x16.vhd $(PWD)/../../Sim_Models/SB_RAM40_4K.vhd
+VHDL_SOURCES = $(PWD)/../../HDL/fifo.vhd $(PWD)/../../HDL/bram.vhd $(PWD)/../../HDL/bram_256x16.vhd $(PWD)/../../Sim_Models/SB_RAM40_4K.vhd
 
 ifeq ($(SIM),ghdl)
 	EXTRA_ARGS += --std=08
